@@ -542,52 +542,213 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 <button id="hayub-chat-button"
   aria-label="Chat with Hayub">✦</button>
 
-<script>
-(() => {
-  const box = document.getElementById('hayub-chat-box');
-  const button = document.getElementById('hayub-chat-button');
-  const messages = document.getElementById('hayub-chat-messages');
-  const form = document.getElementById('hayub-chat-form');
-  const input = document.getElementById('hayub-chat-input');
 
-  button.onclick = () => {
-    box.classList.toggle('open');
+(() => {
+  const box = document.getElementById("hayub-chat-box");
+  const button = document.getElementById("hayub-chat-button");
+  const messages = document.getElementById("hayub-chat-messages");
+  const form = document.getElementById("hayub-chat-form");
+  const input = document.getElementById("hayub-chat-input");
+
+  if (!box || !button || !messages || !form || !input) return;
+
+  // Verified business details already shown on the HAYUB website.
+  const BUSINESS = {
+    name: "HAYUB",
+    type: "premium haircut and unisex salon",
+    address: "49 Modupe Street, Fola Agoro Street, Yaba, Lagos, Nigeria",
+    phone: "+234 907 913 5337",
+    whatsapp:
+      "https://wa.me/2349079135337?text=Hello%20HAYUB%2C%20I%27d%20like%20to%20make%20an%20enquiry"
   };
 
-  form.onsubmit = (event) => {
+  const contact =
+    `Please contact ${BUSINESS.name} directly on ${BUSINESS.phone}, ` +
+    `or use WhatsApp: ${BUSINESS.whatsapp}`;
+
+  const knowledge = [
+    {
+      id: "location",
+      patterns: [
+        /\b(address|location|located|where|directions|direction)\b/,
+        /\b(find you|find the salon|salon address|street address)\b/,
+        /\b(get there|how to reach|which area|what area)\b/,
+        /\byaba\b/,
+        /\bhow do i get\b/
+      ],
+      answer:
+        `HAYUB is a haircut and unisex salon in Yaba, Lagos. ` +
+        `The website lists the address as ${BUSINESS.address}.`
+    },
+    {
+      id: "contact",
+      patterns: [
+        /\b(contact|phone|telephone|number|call|reach)\b/,
+        /\b(whatsapp|mobile number|phone number)\b/,
+        /\b(how can i talk|speak to someone|talk to someone)\b/
+      ],
+      answer:
+        `You can contact HAYUB on ${BUSINESS.phone}. ` +
+        `You can also message the salon on WhatsApp: ${BUSINESS.whatsapp}`
+    },
+    {
+      id: "booking",
+      patterns: [
+        /\b(book|booking|appointment|appointments|reserve|reservation)\b/,
+        /\b(make an appointment|schedule|come in for a cut)\b/,
+        /\b(i want a haircut|i need a haircut)\b/
+      ],
+      answer:
+        `You can contact HAYUB to enquire about an appointment. ` +
+        `Call ${BUSINESS.phone} or message the salon on WhatsApp: ${BUSINESS.whatsapp}`
+    },
+    {
+      id: "services",
+      patterns: [
+        /\b(service|services|offer|offers|provide|available)\b/,
+        /\b(haircut|haircuts|fade|line up|lineup|trim|cut my hair)\b/,
+        /\b(styling|hairstyle|hair style|unisex|grooming)\b/,
+        /\b(colour|color|restoration|finishing|shape up)\b/,
+        /\b(what can you do|what do you do|what do you offer)\b/
+      ],
+      answer:
+        `HAYUB is a haircut and unisex salon offering precision haircuts, ` +
+        `hair styling, colour and restoration services, and finishing and grooming. ` +
+        `For a specific service, please contact the salon to confirm availability.`
+    },
+    {
+      id: "hours",
+      patterns: [
+        /\b(hours|opening|closing|open|closed|operating hours)\b/,
+        /\b(what time|when do you open|when do you close)\b/,
+        /\b(open today|open tomorrow|open now|working days)\b/
+      ],
+      answer:
+        `I'm sorry, I don't have verified information about HAYUB's current ` +
+        `opening hours. Please contact the salon directly. ${contact}`
+    },
+    {
+      id: "prices",
+      patterns: [
+        /\b(price|prices|pricing|cost|costs|how much|charge|charges)\b/,
+        /\b(cheap|expensive|fee|fees|rate|rates|price list)\b/,
+        /\b(naira|₦|budget|discount|discounts)\b/
+      ],
+      answer:
+        `I'm sorry, I don't have verified prices for HAYUB's services. ` +
+        `Please contact the salon for current prices. ${contact}`
+    },
+    {
+      id: "about",
+      patterns: [
+        /\b(about hayub|tell me about|who are you|what is hayub)\b/,
+        /\b(your salon|your business|your company|what kind of place)\b/,
+        /\b(are you a salon|is hayub a salon)\b/
+      ],
+      answer:
+        `HAYUB is a premium haircut and unisex salon in Yaba, Lagos. ` +
+        `Its services focus on haircuts, styling, colour and restoration, ` +
+        `and finishing and grooming.`
+    }
+  ];
+
+  function normalize(text) {
+    return text
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[’']/g, "")
+      .replace(/[^a-z0-9₦\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function addMessage(text, isUser = false) {
+    const message = document.createElement("div");
+    message.className = isUser
+      ? "hayub-msg hayub-user"
+      : "hayub-msg";
+
+    // Use textContent so customer input cannot inject HTML.
+    message.textContent = text;
+    messages.appendChild(message);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function getAnswer(question) {
+    const q = normalize(question);
+
+    // Handle greetings without mistaking them for other questions.
+    if (
+      /^(hi|hello|hey|good morning|good afternoon|good evening|howdy|hiya)$/.test(q)
+    ) {
+      return `Hello! Welcome to HAYUB. How can I help you with our services, location or booking enquiries?`;
+    }
+
+    if (/^(thanks|thank you|thank you very much)$/.test(q)) {
+      return "You're welcome! Let me know if you have another question about HAYUB.";
+    }
+
+    if (/^(bye|goodbye|see you)$/.test(q)) {
+      return "Thank you for visiting HAYUB online. We hope to hear from you soon!";
+    }
+
+    // Score the knowledge topics against the customer's wording.
+    const ranked = knowledge
+      .map(topic => ({
+        topic,
+        score: topic.patterns.reduce(
+          (total, pattern) => total + (pattern.test(q) ? 1 : 0),
+          0
+        )
+      }))
+      .filter(result => result.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    if (ranked.length > 0) {
+      return ranked[0].topic.answer;
+    }
+
+    // Never invent details when the knowledge base has no answer.
+    return (
+      `I'm sorry, I don't have verified information about that yet. ` +
+      `Please contact HAYUB directly for assistance. ${contact}`
+    );
+  }
+
+  button.onclick = () => {
+    box.classList.toggle("open");
+
+    if (box.classList.contains("open")) {
+      input.focus();
+      messages.scrollTop = messages.scrollHeight;
+    }
+  };
+
+  // Update the existing welcome text without changing the widget design.
+  const welcome = messages.querySelector(".hayub-msg:not(.hayub-user)");
+  if (welcome) {
+    welcome.textContent =
+      "Welcome to HAYUB! Ask me about our services, location, contact details or booking enquiries.";
+  }
+
+  const heading = document.getElementById("hayub-chat-head");
+  if (heading) heading.textContent = "HAYUB Assistant";
+
+  form.onsubmit = event => {
     event.preventDefault();
+
     const question = input.value.trim();
     if (!question) return;
 
-    const userMessage = document.createElement('div');
-    userMessage.className = 'hayub-msg hayub-user';
-    userMessage.textContent = question;
-    messages.appendChild(userMessage);
+    addMessage(question, true);
+    addMessage(getAnswer(question));
 
-    const answer = document.createElement('div');
-    answer.className = 'hayub-msg';
-
-    const q = question.toLowerCase();
-
-    if (/hello|hi\\b|hey/.test(q)) {
-      answer.textContent = 'Hello! Welcome to HAYUB.';
-    } else if (/service|haircut|hair|style/.test(q)) {
-      answer.textContent =
-        'HAYUB is a premium haircut and unisex salon in Yaba, Lagos. Contact the salon to confirm specific services.';
-    } else if (/where|location|address/.test(q)) {
-      answer.textContent =
-        'HAYUB is in Yaba, Lagos. Please contact the salon for its exact address.';
-    } else {
-      answer.textContent =
-        'I do not have verified information for that question yet. Please contact HAYUB directly.';
-    }
-
-    messages.appendChild(answer);
-    messages.scrollTop = messages.scrollHeight;
-    input.value = '';
+    input.value = "";
+    input.focus();
   };
 })();
-</script>
+  
   
 </body>
 </html>
