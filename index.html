@@ -449,5 +449,145 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 });
 </script>
 
+
+<style>
+#hayub-chat-button {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 99999;
+  border: 0;
+  border-radius: 50%;
+  width: 58px;
+  height: 58px;
+  background: #111;
+  color: white;
+  font-size: 25px;
+  cursor: pointer;
+  box-shadow: 0 4px 18px #0004;
+}
+#hayub-chat-box {
+  display: none;
+  position: fixed;
+  right: 20px;
+  bottom: 90px;
+  z-index: 99999;
+  width: min(330px, calc(100vw - 40px));
+  height: 400px;
+  background: white;
+  color: #111;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 35px #0003;
+  font: 14px Arial, sans-serif;
+}
+#hayub-chat-box.open {
+  display: flex;
+  flex-direction: column;
+}
+#hayub-chat-head {
+  background: #111;
+  color: white;
+  padding: 16px;
+  font-weight: bold;
+}
+#hayub-chat-messages {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+}
+.hayub-msg {
+  padding: 9px 11px;
+  margin: 8px 0;
+  border-radius: 10px;
+  background: #eee;
+  white-space: pre-wrap;
+}
+.hayub-user {
+  background: #111;
+  color: white;
+  margin-left: 35px;
+}
+#hayub-chat-form {
+  display: flex;
+  padding: 10px;
+  gap: 6px;
+}
+#hayub-chat-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+}
+</style>
+
+<div id="hayub-chat-box">
+  <div id="hayub-chat-head">HAYUB Assistant · Test</div>
+  <div id="hayub-chat-messages">
+    <div class="hayub-msg">
+      Welcome to HAYUB! What would you like to know?
+      This is a demo, not the live AI assistant.
+    </div>
+  </div>
+  <form id="hayub-chat-form">
+    <input id="hayub-chat-input"
+      placeholder="Ask about Hayub..."
+      maxlength="500" required>
+    <button type="submit">➤</button>
+  </form>
+</div>
+
+<button id="hayub-chat-button"
+  aria-label="Chat with Hayub">✦</button>
+
+<script>
+(() => {
+  const box = document.getElementById('hayub-chat-box');
+  const button = document.getElementById('hayub-chat-button');
+  const messages = document.getElementById('hayub-chat-messages');
+  const form = document.getElementById('hayub-chat-form');
+  const input = document.getElementById('hayub-chat-input');
+
+  button.onclick = () => {
+    box.classList.toggle('open');
+  };
+
+  form.onsubmit = (event) => {
+    event.preventDefault();
+    const question = input.value.trim();
+    if (!question) return;
+
+    const userMessage = document.createElement('div');
+    userMessage.className = 'hayub-msg hayub-user';
+    userMessage.textContent = question;
+    messages.appendChild(userMessage);
+
+    const answer = document.createElement('div');
+    answer.className = 'hayub-msg';
+
+    const q = question.toLowerCase();
+
+    if (/hello|hi\\b|hey/.test(q)) {
+      answer.textContent = 'Hello! Welcome to HAYUB.';
+    } else if (/service|haircut|hair|style/.test(q)) {
+      answer.textContent =
+        'HAYUB is a premium haircut and unisex salon in Yaba, Lagos. Contact the salon to confirm specific services.';
+    } else if (/where|location|address/.test(q)) {
+      answer.textContent =
+        'HAYUB is in Yaba, Lagos. Please contact the salon for its exact address.';
+    } else {
+      answer.textContent =
+        'I do not have verified information for that question yet. Please contact HAYUB directly.';
+    }
+
+    messages.appendChild(answer);
+    messages.scrollTop = messages.scrollHeight;
+    input.value = '';
+  };
+})();
+</script>
+  
 </body>
 </html>
